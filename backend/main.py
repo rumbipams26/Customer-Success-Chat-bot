@@ -12,7 +12,7 @@ import os
 CONFIDENCE_THRESHOLD = 0.35  # Hardcoded
 
 # Replace with your frontend URL, or use "*" to allow all origins (for testing)
-FRONTEND_URL = "*"
+FRONTEND_URL = "https://chatbot-customer-success.netlify.app"
 
 # -------------------------
 # 2. INIT APP
@@ -112,3 +112,4 @@ def chat(msg: Message):
         return {"reply": "Connecting to support...", "handoff": True}
 
     return {"reply": RESPONSES.get(intent, "I’m not sure I understand."), "intent": intent, "confidence": confidence}
+
