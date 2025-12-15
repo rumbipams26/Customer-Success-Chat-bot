@@ -9,7 +9,7 @@ import requests
 # 1. CONFIGURATION
 # -------------------------
 CONFIDENCE_THRESHOLD = 0.35  # Hardcoded
-FRONTEND_URL = "https://your-netlify-sites.netlify.app"  # Replace with your Netlify URL
+FRONTEND_URL = "https://chatbot-customer-success.netlify.app/"  # Replace with your Netlify URL
 
 # -------------------------
 # 2. INIT APP
@@ -109,4 +109,5 @@ def chat(msg: Message):
         return {"reply": "Connecting to support...", "handoff": True}
 
     return {"reply": RESPONSES.get(intent, "I’m not sure I understand."), "intent": intent, "confidence": confidence}
+
 
