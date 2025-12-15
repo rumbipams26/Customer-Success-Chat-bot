@@ -9,7 +9,7 @@ import os
 # -------------------------
 # 1. CONFIGURATION
 # -------------------------
-CONFIDENCE_THRESHOLD = 0.35  # Hardcoded
+CONFIDENCE_THRESHOLD = 0.2  # Hardcoded
 
 # Replace with your frontend URL, or use "*" to allow all origins (for testing)
 FRONTEND_URL = "*"
@@ -84,7 +84,22 @@ def create_zendesk_ticket(message):
     requests.post(url, json=data, auth=(f"{ZENDESK_EMAIL}/token", ZENDESK_API_TOKEN))
 
 # -------------------------
-# 7. ROUTES
+# 7. Keyword fallback
+# -------------------------
+KEYWORD_INTENTS = {
+    "password": "account_help",
+    "login": "account_help",
+    "sign in": "account_help",
+    "refund": "refund_policy",
+    "return": "refund_policy",
+    "pricing": "pricing",
+    "price": "pricing",
+    "contact": "contact_support",
+    "support": "contact_support"
+}
+
+# -------------------------
+# 8. ROUTES
 # -------------------------
 @app.get("/")
 def read_root():
@@ -92,25 +107,38 @@ def read_root():
 
 @app.post("/chat")
 def chat(msg: Message):
+    text = msg.message.lower()
+
+    # 1️⃣ Check keyword fallback first
+    for word, intent in KEYWORD_INTENTS.items():
+        if word in text:
+            reply = RESPONSES.get(intent, "I’m not sure I understand.")
+            log_conversation(msg.message, intent, 1.0)  # confidence 1 for keyword match
+            return {"reply": reply, "intent": intent, "confidence": 1.0}
+
+    # 2️⃣ ML model prediction
     X = vectorizer.transform([msg.message])
     probs = model.predict_proba(X)[0]
     intent = model.classes_[probs.argmax()]
     confidence = probs.max()
 
-    # Log conversation
-    conn = get_connection()
-    conn.execute(
-        "INSERT INTO conversations (user_message, predicted_intent, confidence) VALUES (?, ?, ?)",
-        (msg.message, intent, confidence)
-    )
-    conn.commit()
-    conn.close()
+    log_conversation(msg.message, intent, confidence)
 
-    # Low-confidence fallback
+    # 3️⃣ Low-confidence fallback
     if confidence < CONFIDENCE_THRESHOLD:
         create_zendesk_ticket(msg.message)
         return {"reply": "Connecting to support...", "handoff": True}
 
     return {"reply": RESPONSES.get(intent, "I’m not sure I understand."), "intent": intent, "confidence": confidence}
 
-
+# -------------------------
+# 9. Helper function to log conversation
+# -------------------------
+def log_conversation(user_message, predicted_intent, confidence):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO conversations (user_message, predicted_intent, confidence) VALUES (?, ?, ?)",
+        (user_message, predicted_intent, confidence)
+    )
+    conn.commit()
+    conn.close()
