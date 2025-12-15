@@ -4,12 +4,15 @@ from pydantic import BaseModel
 import pickle
 import sqlite3
 import requests
+import os
 
 # -------------------------
 # 1. CONFIGURATION
 # -------------------------
 CONFIDENCE_THRESHOLD = 0.35  # Hardcoded
-FRONTEND_URL = "https://chatbot-customer-success.netlify.app/"  # Replace with your Netlify URL
+
+# Replace with your frontend URL, or use "*" to allow all origins (for testing)
+FRONTEND_URL = "*"
 
 # -------------------------
 # 2. INIT APP
@@ -17,7 +20,7 @@ FRONTEND_URL = "https://chatbot-customer-success.netlify.app/"  # Replace with y
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=[FRONTEND_URL],  # allows frontend to connect
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -109,5 +112,3 @@ def chat(msg: Message):
         return {"reply": "Connecting to support...", "handoff": True}
 
     return {"reply": RESPONSES.get(intent, "I’m not sure I understand."), "intent": intent, "confidence": confidence}
-
-
